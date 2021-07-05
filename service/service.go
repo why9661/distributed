@@ -29,6 +29,7 @@ func startService(ctx context.Context, r registry.Registration) (context.Context
 	go func() {
 		registry.RegisterService(r)
 		stdlog.Println(srv.ListenAndServe())
+		registry.RemoveService(r)
 		cancel()
 	}()
 
@@ -36,6 +37,7 @@ func startService(ctx context.Context, r registry.Registration) (context.Context
 		stdlog.Printf("%s service start.Please press any key to stop.", r.ServiceName)
 		var s string
 		fmt.Scanln(&s)
+		registry.RemoveService(r)
 		srv.Shutdown(ctx)
 		cancel()
 	}()

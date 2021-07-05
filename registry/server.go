@@ -18,6 +18,18 @@ func (r *registry) add(reg Registration) {
 	r.m.Unlock()
 }
 
+func (r *registry) remove(reg Registration) {
+	r.m.Lock()
+	for i := range r.registrations {
+		if r.registrations[i] == reg {
+			r.registrations = append(r.registrations[:i], r.registrations[i+1:]...)
+			r.m.Unlock()
+			return
+		}
+	}
+	r.m.Unlock()
+}
+
 var reg = registry{make([]Registration, 0), new(sync.Mutex)}
 
 type RegistryHandler struct{}
@@ -33,8 +45,19 @@ func (h *RegistryHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		log.Printf("Add service [%s] at [%s]", r.ServiceName, r.ServiceURL)
 		reg.add(r)
+		log.Printf("Add service [%s] at [%s]", r.ServiceName, r.ServiceURL)
+		w.WriteHeader(http.StatusOK)
+	case http.MethodDelete:
+		dec := json.NewDecoder(r.Body)
+		var r Registration
+		if err := dec.Decode(&r); err != nil {
+			log.Println(err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		reg.remove(r)
+		log.Printf("Stop service [%s] at [%s]", r.ServiceName, r.ServiceURL)
 		w.WriteHeader(http.StatusOK)
 	default:
 		w.WriteHeader(http.StatusMethodNotAllowed)
