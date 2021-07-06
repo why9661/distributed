@@ -36,6 +36,7 @@ func RemoveService(r Registration) error {
 	if err != nil {
 		return err
 	}
+	req.Header.Add("Content-Type", "application/json")
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {

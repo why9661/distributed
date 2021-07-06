@@ -11,14 +11,13 @@ import (
 func main() {
 	http.Handle("/services", &registry.RegistryHandler{})
 
-	var server http.Server
-
-	server.Addr = registry.RegistryHost + ":" + registry.RegistryPort
+	var srv http.Server
+	srv.Addr = registry.RegistryHost + ":" + registry.RegistryPort
 
 	ctx, cancel := context.WithCancel(context.Background())
 
 	go func() {
-		log.Println(server.ListenAndServe())
+		log.Println(srv.ListenAndServe())
 		cancel()
 	}()
 
@@ -26,7 +25,7 @@ func main() {
 		log.Println("Registry Service start.Please press any key to stop.")
 		var s string
 		fmt.Scanln(&s)
-		cancel()
+		srv.Shutdown(ctx)
 	}()
 
 	<-ctx.Done()
