@@ -4,41 +4,49 @@ import (
 	"context"
 	"distributed/registry"
 	"fmt"
-	stdlog "log"
+	"log"
 	"net/http"
 )
 
-func Start(ctx context.Context, r registry.Registration, registerHandler func()) (context.Context, error) {
-	registerHandler()
+func Start(ctx context.Context, host, port string, reg registry.Registration, registerHandlersFunc func()) (context.Context, error) {
 
-	ctx, err := startService(ctx, r)
+	registerHandlersFunc()
+	ctx = startService(ctx, reg.ServiceName, host, port)
+	err := registry.RegisterService(reg)
 	if err != nil {
-		return nil, err
+		return ctx, err
 	}
 
-	return ctx, err
+	return ctx, nil
 }
 
-func startService(ctx context.Context, r registry.Registration) (context.Context, error) {
+func startService(ctx context.Context, serviceName registry.ServiceName, host, port string) context.Context {
+
 	ctx, cancel := context.WithCancel(ctx)
 
 	var srv http.Server
-
-	srv.Addr = r.ServiceURL
+	srv.Addr = ":" + port
 
 	go func() {
-		registry.RegisterService(r)
-		stdlog.Println(srv.ListenAndServe())
-		registry.RemoveService(r)
+		log.Println(srv.ListenAndServe())
+		err := registry.ShutdownService(fmt.Sprintf("http://%s:%s", host, port))
+		if err != nil {
+			log.Println(err)
+		}
 		cancel()
 	}()
 
 	go func() {
-		stdlog.Printf("%s service start.Please press any key to stop.", r.ServiceName)
+		fmt.Printf("%v started. Press any key to stop. \n", serviceName)
 		var s string
 		fmt.Scanln(&s)
+		err := registry.ShutdownService(fmt.Sprintf("http://%s:%s", host, port))
+		if err != nil {
+			log.Println(err)
+		}
 		srv.Shutdown(ctx)
+		cancel()
 	}()
 
-	return ctx, nil
+	return ctx
 }

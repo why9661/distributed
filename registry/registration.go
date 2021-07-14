@@ -1,11 +1,27 @@
 package registry
 
+type Registration struct {
+	ServiceName      ServiceName
+	ServiceURL       string
+	RequiredServices []ServiceName
+	ServiceUpdateURL string
+	HeartbeatURL     string
+}
+
+type ServiceName string
+
 const (
-	RegistryHost = "localhost"
-	RegistryPort = "8000"
+	LogService     = ServiceName("LogService")
+	GradingService = ServiceName("GradingService")
+	PortalService  = ServiceName("Portald")
 )
 
-type Registration struct {
-	ServiceName string
-	ServiceURL  string
+type patchEntry struct {
+	Name ServiceName
+	URL  string
+}
+
+type patch struct {
+	Added   []patchEntry
+	Removed []patchEntry
 }
